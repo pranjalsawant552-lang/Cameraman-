@@ -1,0 +1,46 @@
+# ============================================================
+# LOCAL / DEMO profile
+#
+# Activate with: SPRING_PROFILE=local  (or SPRING_PROFILES_ACTIVE=local)
+#
+# This bakes in everything needed to run against the docker-compose.demo.yml
+# stack (Postgres + Redis + MinIO) with ZERO extra environment variables.
+# Postgres/Redis already match application.yml's defaults; the only thing
+# that genuinely needs overriding for a non-AWS environment is the S3
+# endpoint/credentials, which is what this file does.
+#
+# Razorpay/WhatsApp are left unset on purpose — see LOCAL_DEMO_SETUP.md for
+# what happens when they're not configured (short version: nothing crashes,
+# those specific features just show a clear "not configured" state).
+# ============================================================
+
+app:
+  otp:
+    log-to-console: true   # OTP prints to this terminal's log instead of sending a real SMS/email
+
+  base-url: http://localhost:5173
+
+storage:
+  s3:
+    endpoint: http://localhost:9000
+    bucket: cameraman-photos
+    region: us-east-1
+    access-key: minioadmin
+    secret-key: minioadmin123
+    public-base-url: http://localhost:9000/cameraman-photos
+
+spring:
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+logging:
+  level:
+    com.cameraman: DEBUG
+    org.hibernate.SQL: DEBUG
+
+springdoc:
+  swagger-ui:
+    enabled: true   # API docs/testing UI at http://localhost:8080/api/swagger-ui.html

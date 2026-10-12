@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Selection Reminder</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f4f6f9;margin:0;padding:0}
+.container{max-width:500px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.header{background:linear-gradient(135deg,#ff9800 0%,#f57c00 100%);padding:30px;text-align:center}
+.header h1{color:#fff;margin:0;font-size:22px}
+.body{padding:30px;color:#333;font-size:14px;line-height:1.7;text-align:center}
+.btn{display:inline-block;background:#ff9800;color:#fff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;margin:20px 0}
+.footer{background:#f8f9fa;padding:18px;text-align:center;color:#9aa0a6;font-size:12px}
+</style></head>
+<body>
+<div class="container">
+  <div class="header"><h1>⏰ Selection Reminder</h1></div>
+  <div class="body">
+    <p>Hi <strong th:text="${clientName}"></strong>,</p>
+    <p>You still have <strong th:text="${remaining}"></strong> photos to select.</p>
+    <a class="btn" th:href="${selectionUrl}">Complete Selection</a>
+  </div>
+  <div class="footer" th:text="${appName}">Cameraman Photo Studio</div>
+</div>
+</body></html>

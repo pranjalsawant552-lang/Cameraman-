@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title th:text="'Invoice ' + ${invoice.invoiceNumber}">Invoice</title>
+<style>
+  @page { size: 148mm 210mm; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans Devanagari', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 13px;
+    color: #111;
+  }
+  /* Roughly half of an A4 sheet, matching the receipt-book page size */
+  .page { width: 560px; padding: 18px 20px; border: 1.5px solid #000; }
+
+  .header { text-align: center; border: 1.5px solid #000; padding: 10px 12px 8px; }
+  .header-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .camera-icon { font-size: 22px; }
+  .studio-name { font-size: 24px; font-weight: 700; letter-spacing: 0.5px; }
+  .tagline { font-size: 11px; margin-top: 4px; line-height: 1.5; }
+  .contact-line { font-size: 13px; font-weight: 700; margin-top: 6px; }
+
+  .address-row {
+    border: 1.5px solid #000; border-top: none;
+    padding: 6px 12px; font-size: 12px;
+  }
+
+  .name-billno-row { display: flex; border: 1.5px solid #000; border-top: none; }
+  .name-cell { flex: 1; padding: 8px 12px; border-right: 1.5px solid #000; display: flex; align-items: baseline; gap: 6px; }
+  .meta-cell { width: 190px; padding: 8px 12px; }
+  .meta-cell div { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .meta-cell div:last-child { margin-bottom: 0; }
+  .fill-line { flex: 1; border-bottom: 1px dotted #000; min-height: 16px; }
+  .bill-no-value, .date-value { font-weight: 700; font-size: 15px; }
+
+  table.items { width: 100%; border-collapse: collapse; border: 1.5px solid #000; border-top: none; }
+  table.items th, table.items td { border-left: 1.5px solid #000; padding: 6px 8px; font-size: 12px; }
+  table.items th:first-child, table.items td:first-child { border-left: none; }
+  table.items thead th { border-bottom: 1.5px solid #000; font-weight: 700; text-align: center; }
+  table.items td.desc { text-align: left; }
+  table.items td.num { text-align: center; }
+  table.items td.amt { text-align: right; }
+  .items-body-row td { height: 130px; vertical-align: top; }
+
+  .totals-row { display: flex; justify-content: flex-end; border: 1.5px solid #000; border-top: none; }
+  .totals-box { width: 210px; }
+  .totals-box div { display: flex; justify-content: space-between; padding: 4px 10px; border-top: 1px solid #000; font-size: 13px; }
+  .totals-box div:first-child { border-top: none; }
+  .totals-box .label { font-weight: 600; }
+  .totals-box .total-final { font-weight: 700; font-size: 14px; }
+
+  .notices { padding: 10px 4px 4px; font-size: 11px; line-height: 1.9; }
+  .notices .note { display: flex; gap: 6px; }
+
+  .footer-row { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 6px; border-top: 1px dashed #000; margin-top: 4px; }
+  .socials { display: flex; align-items: center; gap: 6px; font-size: 11px; }
+  .socials .dot { width: 16px; height: 16px; border: 1px solid #000; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; }
+  .signature { text-align: right; font-size: 11px; }
+  .signature .for-line { font-weight: 700; margin-bottom: 22px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-row">
+      <span class="camera-icon">&#128247;</span>
+      <span class="studio-name" th:text="${studio.studioName}">कॅमेरामन फोटो स्टुडिओ</span>
+    </div>
+    <div class="tagline" th:text="${studio.tagline}"></div>
+    <div class="contact-line">
+      <span th:if="${studio.ownerName}" th:text="${studio.ownerName} + ' – '"></span>
+      <span th:text="${studio.phone}"></span>
+    </div>
+  </div>
+
+  <div class="address-row" th:if="${studio.address}">
+    पत्ता : <span th:text="${studio.address}"></span>
+  </div>
+
+  <div class="name-billno-row">
+    <div class="name-cell">
+      नाव : <span class="fill-line" th:text="${invoice.clientName}"></span>
+    </div>
+    <div class="meta-cell">
+      <div>बिल नं. : <span class="bill-no-value" th:text="${invoice.invoiceNumber}"></span></div>
+      <div>दिनांक : <span class="date-value" th:text="${#temporals.format(invoice.invoiceDate,'dd/MM/yyyy')}"></span></div>
+    </div>
+  </div>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th style="width:10%">अ.क्र.</th>
+        <th style="width:52%">तपशील</th>
+        <th style="width:16%">नग</th>
+        <th style="width:22%">रक्कम</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr th:each="item, stat : ${items}">
+        <td class="num" th:text="${stat.index + 1}"></td>
+        <td class="desc" th:text="${item.description}"></td>
+        <td class="num" th:text="${item.quantity}"></td>
+        <td class="amt" th:text="${#numbers.formatDecimal(item.lineTotal,1,2)}"></td>
+      </tr>
+      <!-- pad the receipt out visually when there are only a few line items -->
+      <tr class="items-body-row" th:if="${items.size() < 4}">
+        <td></td><td></td><td></td><td></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="totals-row">
+    <div class="totals-box">
+      <div><span class="label">एकूण</span><span th:text="${#numbers.formatDecimal(invoice.totalAmount,1,2)}"></span></div>
+      <div><span class="label">जमा</span><span th:text="${#numbers.formatDecimal(invoice.amountPaid,1,2)}"></span></div>
+      <div class="total-final"><span class="label">बाकी</span><span th:text="${#numbers.formatDecimal(invoice.balanceDue,1,2)}"></span></div>
+    </div>
+  </div>
+
+  <div class="notices">
+    <div class="note">★ कृपया अगोदर अ‍ॅडव्हान्स द्यावा लागेल.</div>
+    <div class="note">★ कृपया फोटो १ महिन्याच्या आत घेऊन जावेत अन्यथा आम्ही जबाबदार नाही.</div>
+  </div>
+
+  <div class="footer-row">
+    <div class="socials">
+      <span class="dot">&#128247;</span>
+      <span class="dot">&#127760;</span>
+      <span class="dot">&#128205;</span>
+      <span th:text="${studio.studioName}"></span>
+    </div>
+    <div class="signature">
+      <div class="for-line" th:text="${studio.studioName} + ' करिता'"></div>
+      <div>अधिकृत सही</div>
+      <div th:if="${invoice.generatedByName}" style="font-size:9px;margin-top:2px;color:#555;">बिल तयार केले: <span th:text="${invoice.generatedByName}"></span></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

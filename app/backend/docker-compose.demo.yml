@@ -1,0 +1,97 @@
+version: '3.9'
+
+# ============================================================
+# Cameraman Photo Studio — LOCAL DEMO stack
+#
+# This is deliberately separate from docker-compose.yml (the real
+# production stack with Nginx/SSL). This one just gives you the three
+# things the backend needs that you don't want to depend on real
+# external accounts for during a demo:
+#   - Postgres  (real database, not a mock)
+#   - Redis     (used for the settings cache)
+#   - MinIO     (speaks the S3 API — the app's StorageService already
+#                supports pointing at a custom S3-compatible endpoint,
+#                that's literally what `endpointOverride` +
+#                `forcePathStyle(true)` in StorageService.java are for.
+#                No code changes needed, just point it here instead of AWS.)
+#
+# The backend and frontend are NOT included here — run those directly
+# (`./mvnw spring-boot:run` and `npm start`) so you have live control
+# during the demo (restart, watch logs, etc.) instead of them being
+# buried inside a container.
+#
+# Usage: see LOCAL_DEMO_SETUP.md in the repo root.
+# ============================================================
+
+volumes:
+  demo_postgres_data:
+  demo_minio_data:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cameraman-demo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cameraman_db
+      POSTGRES_USER: cameraman
+      POSTGRES_PASSWORD: cameraman@2024
+    volumes:
+      - demo_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cameraman -d cameraman_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: cameraman-demo-redis
+    restart: unless-stopped
+    # No password — matches the app's default (REDIS_PASSWORD defaults to
+    # empty), so nothing extra to configure for a demo.
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: cameraman-demo-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - demo_minio_data:/data
+    ports:
+      - "9000:9000"   # S3 API — this is what the backend talks to
+      - "9001:9001"   # Web console — open this in a browser to see uploaded photos
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # One-shot job: creates the bucket + makes it publicly readable (so gallery
+  # photo URLs work in the browser without needing signed URLs for every
+  # single <img> tag), then exits. Runs automatically on `docker compose up`.
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    container_name: cameraman-demo-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set demo http://minio:9000 minioadmin minioadmin123 &&
+      mc mb --ignore-existing demo/cameraman-photos &&
+      mc anonymous set download demo/cameraman-photos &&
+      echo 'MinIO bucket ready.'
+      "

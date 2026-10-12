@@ -1,0 +1,352 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+/* ============================================================
+   THEME TOKENS
+   Four fully considered palettes, not one recolored template.
+   Each theme also carries its own radius + shadow language so
+   switching themes changes the room, not just the wallpaper.
+   ============================================================ */
+
+/* NOIR — obsidian + antique gold. Deep, cinematic, premium. */
+:root,
+[data-theme="noir"] {
+  color-scheme: dark;
+  --c-bg: #0b0a08;
+  --c-surface: #141210;
+  --c-surface-2: #1d1a15;
+  --c-surface-3: #27231b;
+  --c-border: #342f23;
+  --c-ink: #f5efe2;
+  --c-ink-muted: #b0a692;
+  --c-ink-faint: #7c7360;
+  --c-accent: #d8b26a;
+  --c-accent-strong: #ecc987;
+  --c-accent-ink: #1a1206;
+  --c-success: #7fb88f;
+  --c-success-bg: #1c2a20;
+  --c-warning: #e0a45c;
+  --c-warning-bg: #2c2214;
+  --c-danger: #dd8b7f;
+  --c-danger-bg: #2c1a16;
+  --c-info: #8fb4d9;
+  --c-info-bg: #182430;
+  --c-aurora-1: #d8b26a;
+  --c-aurora-2: #b8692f;
+  --c-aurora-3: #6b4a22;
+  --c-grad-a: #f6dca0;
+  --c-grad-b: #c98a3c;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 26px;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -12px rgba(0,0,0,0.55);
+  --shadow-pop: 0 8px 24px -6px rgba(216,178,106,0.30);
+  --grain-opacity: 0.05;
+}
+
+/* EDITORIAL — warm paper + terracotta. Magazine-like, tactile, calm. */
+[data-theme="editorial"] {
+  color-scheme: light;
+  --c-bg: #f4eee1;
+  --c-surface: #fcf9f2;
+  --c-surface-2: #eee4cf;
+  --c-surface-3: #e3d6b8;
+  --c-border: #d9cba9;
+  --c-ink: #241c12;
+  --c-ink-muted: #6f624c;
+  --c-ink-faint: #9a8d72;
+  --c-accent: #a8482a;
+  --c-accent-strong: #8a3a20;
+  --c-accent-ink: #fdf5ea;
+  --c-success: #4f7a4d;
+  --c-success-bg: #e4ecdf;
+  --c-warning: #a2691f;
+  --c-warning-bg: #f3e6cd;
+  --c-danger: #a8402f;
+  --c-danger-bg: #f3dfd8;
+  --c-info: #3e6a86;
+  --c-info-bg: #dfe9ee;
+  --c-aurora-1: #e0a37a;
+  --c-aurora-2: #c96a45;
+  --c-aurora-3: #f1d9a8;
+  --c-grad-a: #c4572f;
+  --c-grad-b: #7f3519;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+  --shadow-card: 0 1px 1px rgba(36,28,18,0.04), 0 10px 24px -14px rgba(36,28,18,0.35);
+  --shadow-pop: 0 8px 20px -6px rgba(168,72,42,0.28);
+  --grain-opacity: 0.035;
+}
+
+/* DAYLIGHT — gallery white + sage. Airy, quiet, modern. */
+[data-theme="daylight"] {
+  color-scheme: light;
+  --c-bg: #f7f8f5;
+  --c-surface: #ffffff;
+  --c-surface-2: #eff2ec;
+  --c-surface-3: #e4e9df;
+  --c-border: #dde2d8;
+  --c-ink: #1b2220;
+  --c-ink-muted: #5f6b66;
+  --c-ink-faint: #94a09a;
+  --c-accent: #2e7060;
+  --c-accent-strong: #235a4d;
+  --c-accent-ink: #f4fbf7;
+  --c-success: #3e8e63;
+  --c-success-bg: #e6f2ea;
+  --c-warning: #b07a20;
+  --c-warning-bg: #f6ecd9;
+  --c-danger: #c1503f;
+  --c-danger-bg: #f8e6e2;
+  --c-info: #3a6f96;
+  --c-info-bg: #e3edf3;
+  --c-aurora-1: #bfe3d2;
+  --c-aurora-2: #f5d9c0;
+  --c-aurora-3: #cfe0f5;
+  --c-grad-a: #3f9078;
+  --c-grad-b: #1f5446;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --shadow-card: 0 1px 2px rgba(27,34,32,0.04), 0 8px 20px -12px rgba(27,34,32,0.16);
+  --shadow-pop: 0 6px 16px -4px rgba(46,112,96,0.24);
+  --grain-opacity: 0;
+}
+
+/* APERTURE — midnight indigo + coral, with violet/cyan light leaks. Bold, neon-lit. */
+[data-theme="aperture"] {
+  color-scheme: dark;
+  --c-bg: #0b0d20;
+  --c-surface: #151834;
+  --c-surface-2: #1e2248;
+  --c-surface-3: #272c5a;
+  --c-border: #313769;
+  --c-ink: #eeedfc;
+  --c-ink-muted: #a3a8d0;
+  --c-ink-faint: #6d73aa;
+  --c-accent: #ff6a55;
+  --c-accent-strong: #ff8a76;
+  --c-accent-ink: #1a0906;
+  --c-success: #59d6a0;
+  --c-success-bg: #12302a;
+  --c-warning: #ffc168;
+  --c-warning-bg: #332411;
+  --c-danger: #ff6f6f;
+  --c-danger-bg: #331616;
+  --c-info: #6fc7e7;
+  --c-info-bg: #102a38;
+  --c-aurora-1: #ff6a55;
+  --c-aurora-2: #7a5cff;
+  --c-aurora-3: #2fd0ff;
+  --c-grad-a: #ff8a76;
+  --c-grad-b: #b58cff;
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 30px;
+  --shadow-card: 0 1px 2px rgba(0,0,0,0.5), 0 16px 40px -14px rgba(255,106,85,0.2);
+  --shadow-pop: 0 10px 28px -6px rgba(255,106,85,0.4);
+  --grain-opacity: 0.04;
+}
+
+@theme inline {
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-surface-3: var(--c-surface-3);
+  --color-border: var(--c-border);
+  --color-ink: var(--c-ink);
+  --color-ink-muted: var(--c-ink-muted);
+  --color-ink-faint: var(--c-ink-faint);
+  --color-accent: var(--c-accent);
+  --color-accent-strong: var(--c-accent-strong);
+  --color-accent-ink: var(--c-accent-ink);
+  --color-success: var(--c-success);
+  --color-success-bg: var(--c-success-bg);
+  --color-warning: var(--c-warning);
+  --color-warning-bg: var(--c-warning-bg);
+  --color-danger: var(--c-danger);
+  --color-danger-bg: var(--c-danger-bg);
+  --color-info: var(--c-info);
+  --color-info-bg: var(--c-info-bg);
+
+  --color-aurora-1: var(--c-aurora-1);
+  --color-aurora-2: var(--c-aurora-2);
+  --color-aurora-3: var(--c-aurora-3);
+
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+}
+
+* {
+  border-color: var(--c-border);
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--c-bg);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 320ms ease, color 320ms ease;
+}
+
+::selection {
+  background: var(--c-accent);
+  color: var(--c-accent-ink);
+}
+
+/* Subtle film-grain texture on dark/rich themes only, for material depth
+   without resorting to decorative gradient washes. */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 60;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--c-ink-faint); }
+
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.font-display { font-family: var(--font-display); }
+
+/* ============================================================
+   PUBLIC SITE — 3D, glass, aurora and motion utilities.
+   Everything below is theme-aware (reads the tokens above) and
+   switches off under prefers-reduced-motion via the global rule.
+   ============================================================ */
+
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+/* Circular theme-switch reveal (View Transitions API). */
+::view-transition-old(root),
+::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+::view-transition-old(root) { z-index: 1; }
+::view-transition-new(root) { z-index: 2; }
+
+.preserve-3d { transform-style: preserve-3d; }
+
+.glass {
+  background: color-mix(in srgb, var(--c-surface) 70%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid color-mix(in srgb, var(--c-border) 80%, transparent);
+}
+
+.text-gradient {
+  background-image: linear-gradient(100deg, var(--c-grad-a), var(--c-grad-b) 50%, var(--c-grad-a));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-pan 7s linear infinite;
+}
+@keyframes gradient-pan { to { background-position: 200% center; } }
+
+/* Aurora: three drifting, blurred colour fields behind a hero. */
+.aurora { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.aurora > i {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(80px);
+  opacity: 0.38;
+  will-change: transform;
+}
+.aurora > i:nth-child(1) { width: 46vw; height: 46vw; left: -10vw; top: -14vw; background: var(--c-aurora-1); animation: aurora-a 22s ease-in-out infinite; }
+.aurora > i:nth-child(2) { width: 38vw; height: 38vw; right: -8vw; top: 6vw; background: var(--c-aurora-2); animation: aurora-b 26s ease-in-out infinite; }
+.aurora > i:nth-child(3) { width: 34vw; height: 34vw; left: 30vw; bottom: -16vw; background: var(--c-aurora-3); animation: aurora-c 30s ease-in-out infinite; }
+[data-theme="daylight"] .aurora > i,
+[data-theme="editorial"] .aurora > i { opacity: 0.55; }
+@keyframes aurora-a { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(8vw,6vw,0) scale(1.15); } }
+@keyframes aurora-b { 0%,100% { transform: translate3d(0,0,0) scale(1.1); } 50% { transform: translate3d(-9vw,4vw,0) scale(0.92); } }
+@keyframes aurora-c { 0%,100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(-6vw,-5vw,0) scale(1.2); } }
+
+.grid-lines {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.4;
+  background-image:
+    linear-gradient(var(--c-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--c-border) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, #000 15%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 35%, #000 15%, transparent 75%);
+}
+
+/* Rotating gradient border. */
+@property --angle { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+.border-spin { position: relative; }
+.border-spin::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none;
+  background: conic-gradient(from var(--angle), transparent 0 55%, var(--c-accent) 78%, var(--c-aurora-2) 90%, transparent 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude;
+  animation: spin-angle 6s linear infinite;
+}
+@keyframes spin-angle { to { --angle: 360deg; } }
+
+/* Spotlight card: a soft light that follows the pointer (--sx/--sy set from JS). */
+.spotlight { position: relative; overflow: hidden; }
+.spotlight::before {
+  content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 250ms ease;
+  background: radial-gradient(360px circle at var(--sx, 50%) var(--sy, 50%), color-mix(in srgb, var(--c-accent) 18%, transparent), transparent 65%);
+}
+.spotlight:hover::before { opacity: 1; }
+
+.marquee-track { display: flex; width: max-content; animation: marquee 48s linear infinite; }
+.marquee:hover .marquee-track { animation-play-state: paused; }
+@keyframes marquee { to { transform: translateX(-50%); } }
+
+@keyframes float-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+@keyframes spin-slow-rev { to { transform: rotate(-360deg); } }
+@keyframes lens-sway {
+  0%,100% { transform: rotateX(9deg) rotateY(-16deg); }
+  50% { transform: rotateX(-7deg) rotateY(16deg); }
+}
+@keyframes pulse-ring { 0% { transform: scale(0.9); opacity: 0.7; } 100% { transform: scale(1.6); opacity: 0; } }
+@keyframes blink-caret { 50% { opacity: 0; } }
+
+.float-y { animation: float-y 6s ease-in-out infinite; }
+.spin-slow { animation: spin-slow 40s linear infinite; }
+.spin-slow-rev { animation: spin-slow-rev 55s linear infinite; }
+.lens-sway { animation: lens-sway 12s ease-in-out infinite; }
+
+/* Film-strip perforation edge, used as a decorative divider. */
+.film-edge {
+  height: 14px;
+  background:
+    radial-gradient(circle at 7px 7px, var(--c-bg) 3.5px, transparent 4px) 0 0 / 22px 14px repeat-x,
+    var(--c-surface-2);
+  border-block: 1px solid var(--c-border);
+}

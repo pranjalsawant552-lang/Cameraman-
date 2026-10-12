@@ -1,0 +1,350 @@
+spring:
+  application:
+    name: cameraman-photo-studio
+
+  profiles:
+    active: ${SPRING_PROFILE:dev}
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/cameraman_db}
+    username: ${DB_USERNAME:cameraman}
+    password: ${DB_PASSWORD:cameraman@2024}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: CameramanHikariPool
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    out-of-order: false
+    validate-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:noreply@cameraman.com}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          ssl:
+            trust: "*"
+
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 500MB
+      max-request-size: 500MB
+
+  thymeleaf:
+    prefix: classpath:/templates/
+
+app:
+  contact:
+    # Staff email address that receives a copy of every public contact-form
+    # submission. Leave blank to disable the notification email (submissions
+    # are still saved and visible under Contact Inquiries either way).
+    notify-email: ""
+  otp:
+    # When true, every generated OTP is also printed to the server console/log
+    # (clearly boxed, at WARN level so it's easy to spot) in addition to
+    # whatever real channel (email/SMS/WhatsApp) it's sent through. This lets
+    # you exercise the full registration/login/verification flow locally
+    # without needing working SMTP or SMS credentials. Overridden to true in
+    # application-dev.yml; NEVER enable this in application-prod.yml.
+    log-to-console: false
+    suffix: .html
+    mode: HTML
+    encoding: UTF-8
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+    time-zone: Asia/Kolkata
+
+  quartz:
+    job-store-type: jdbc
+    jdbc:
+      initialize-schema: always
+    properties:
+      org:
+        quartz:
+          scheduler:
+            instanceName: CameramanScheduler
+            instanceId: AUTO
+          threadPool:
+            threadCount: 10
+
+  # Application Settings (merged into the single top-level `app:` block above —
+  # this used to be a SECOND `app:` root key further down the file, which is
+  # invalid YAML: Spring's SnakeYAML-based loader throws a
+  # DuplicateKeyException constructing the property map from two `app:` roots,
+  # so the app would fail to start as soon as anything tried to read these.
+  # name/base-url/etc. are used below in EmailService/WhatsAppService fixes.)
+  name: Cameraman Photo Studio
+  base-url: ${APP_BASE_URL:http://localhost:4200}
+  api-url: ${API_BASE_URL:http://localhost:8080/api}
+  timezone: Asia/Kolkata
+  currency: INR
+  gst-number: ${GST_NUMBER:27AAAAA0000A1Z5}
+  cors:
+    # Comma-separated exact origins allowed to make credentialed requests
+    # (see SecurityConfig#corsConfigurationSource). Previously this was a
+    # wildcard "*" origin pattern combined with allowCredentials(true) —
+    # Spring resolves that by reflecting whatever Origin header the request
+    # sent, which means literally any website could make an authenticated
+    # request using a visitor's stored JWT. Fixed to an explicit allow-list;
+    # set CORS_ALLOWED_ORIGINS in production to your real frontend domain(s).
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:*,http://127.0.0.1:*}
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /api
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+  error:
+    include-message: never
+    include-binding-errors: never
+
+# JWT Configuration
+jwt:
+  secret: ${JWT_SECRET:c2VjdXJlLWp3dC1zZWNyZXQta2V5LWZvci1jYW1lcmFtYW4tcGhvdG8tc3R1ZGlvLTIwMjQ=}
+  access-token-expiry: ${JWT_ACCESS_EXPIRY:900000}
+  refresh-token-expiry: ${JWT_REFRESH_EXPIRY:604800000}
+  issuer: cameraman-photo-studio
+
+# Storage Configuration
+storage:
+  type: ${STORAGE_TYPE:s3}
+  s3:
+    # R2 setup: endpoint = https://<your-cloudflare-account-id>.r2.cloudflarestorage.com,
+    # region can stay as any value (R2 ignores it, AWS SDK still requires one to be set),
+    # access-key/secret-key = an R2 API token's Access Key ID / Secret Access Key.
+    # (This used to also have an unused storage.cloudflare.* block below that no Java
+    # code ever read — removed rather than leave two config paths that look equivalent
+    # but only one of which actually does anything.)
+    endpoint: ${S3_ENDPOINT:https://s3.amazonaws.com}
+    bucket: ${S3_BUCKET:cameraman-photos}
+    region: ${S3_REGION:ap-south-1}
+    access-key: ${S3_ACCESS_KEY:}
+    secret-key: ${S3_SECRET_KEY:}
+    signed-url-expiry: ${S3_SIGNED_URL_EXPIRY:3600}
+    # Host baked into signed URLs the BROWSER opens. Blank = same as `endpoint`.
+    # Needed for MinIO-in-Docker (backend: http://minio:9000, browser: http://localhost:9000).
+    presign-endpoint: ${S3_PRESIGN_ENDPOINT:}
+    # MinIO needs path-style. AWS S3 / iDrive e2 / R2 accept it as well.
+    path-style: ${S3_PATH_STYLE:true}
+    # The bucket's actual public delivery domain — different from `endpoint` above, which
+    # is the authenticated S3 API endpoint. On R2 this is a pub-<hash>.r2.dev subdomain
+    # (enable "Public access" on the bucket in the R2 dashboard) or a custom domain. Only
+    # needed for assets meant to be genuinely public (inventory QR codes, WhatsApp
+    # broadcast media) — gallery photos and invoice PDFs use signed URLs and don't need this.
+    public-base-url: ${S3_PUBLIC_BASE_URL:}
+  # ---- Where each kind of file is stored (see STORAGE.md) ------------------------------------
+  # s3 | gdrive | auto. `auto` = Google Drive when it is configured below, otherwise S3, so a
+  # deployment without Drive credentials behaves exactly as before. PUBLIC assets (CMS images,
+  # QR codes, broadcast media) are always S3: they must load with no login, which a private
+  # Drive cannot do.
+  routing:
+    originals: ${STORAGE_ORIGINALS:auto}       # full-resolution camera files: big, written once
+    derivatives: ${STORAGE_DERIVATIVES:s3}     # thumbnails/previews: small, read constantly
+    documents: ${STORAGE_DOCUMENTS:s3}         # invoice PDFs the server re-reads and emails
+  # Expiring links for files in a provider without presigned URLs (Google Drive). Defaults to the
+  # JWT secret so nothing extra is required; set STORAGE_LINK_SECRET to rotate it independently.
+  signed-link:
+    secret: ${STORAGE_LINK_SECRET:${jwt.secret}}
+  # Preview/thumbnail generation. Originals are never recompressed.
+  images:
+    preview-size: ${IMAGE_PREVIEW_SIZE:1600}          # px, long edge
+    preview-quality: ${IMAGE_PREVIEW_QUALITY:0.82}
+    thumbnail-size: ${IMAGE_THUMBNAIL_SIZE:400}       # px, long edge
+    thumbnail-quality: ${IMAGE_THUMBNAIL_QUALITY:0.8}
+    max-concurrent-decodes: ${IMAGE_MAX_CONCURRENT_DECODES:2}  # full-size decodes at once (heap guard)
+
+# Attendance machines (ADMS/iClock push). Serial numbers allowed to push without ?key=
+# (machines can't add a key to the URL). Comma-separated, or * for any (trusted LAN only).
+attendance:
+  allowed-device-serials: ${ATTENDANCE_ALLOWED_SERIALS:}
+
+# Razorpay
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:}
+  key-secret: ${RAZORPAY_KEY_SECRET:}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
+
+# Google Drive folder import (bulk photo ingestion for staff — separate from,
+# and has no bearing on, client-facing gallery privacy). Needs a Drive API key
+# (Google Cloud Console -> APIs & Services -> Credentials -> Create API Key,
+# then restrict it to the Google Drive API). Only works on folders shared as
+# "Anyone with the link can view" — that's a Drive API key limitation, not
+# something this app can work around, since a plain API key can't authenticate
+# as a specific Google user to read a private folder.
+google:
+  drive:
+    api-key: ${GOOGLE_DRIVE_API_KEY:}
+    # Google Drive as PRIVATE STORAGE for originals (separate from the folder import above).
+    # Create a folder in Drive, DON'T share it publicly, put its id here, then give ONE of:
+    #  - OAuth refresh token (uses your own Google account's storage quota), or
+    #  - a service account JSON key (needs a Shared Drive, because service accounts have no
+    #    personal Drive quota; add the service account as a member of that Shared Drive).
+    # All of these are server-side secrets: never commit them, never expose them to the frontend.
+    storage:
+      root-folder-id: ${GDRIVE_ROOT_FOLDER_ID:}
+      oauth:
+        client-id: ${GDRIVE_OAUTH_CLIENT_ID:}
+        client-secret: ${GDRIVE_OAUTH_CLIENT_SECRET:}
+        refresh-token: ${GDRIVE_OAUTH_REFRESH_TOKEN:}
+      service-account-json: ${GDRIVE_SERVICE_ACCOUNT_JSON:}
+      service-account-path: ${GDRIVE_SERVICE_ACCOUNT_PATH:}
+
+# Firebase (mobile OTP verification via Firebase Phone Auth). The SMS itself
+# is sent client-side by the Firebase JS SDK; the backend only verifies the
+# resulting ID token to confirm the phone number was actually verified.
+# Provide EITHER a path to the service account JSON file OR the raw JSON
+# content directly (handy for platforms where you can't mount a file, e.g. an
+# env var holding the whole JSON string).
+firebase:
+  service-account-path: ${FIREBASE_SERVICE_ACCOUNT_PATH:}
+  service-account-json: ${FIREBASE_SERVICE_ACCOUNT_JSON:}
+  project-id: ${FIREBASE_PROJECT_ID:}
+
+# SMS Gateway (for mobile OTP) - supports fast2sms | msg91 | twilio | none
+sms:
+  provider: ${SMS_PROVIDER:none}
+  api-url: ${SMS_API_URL:}
+  api-key: ${SMS_API_KEY:}
+  sender-id: ${SMS_SENDER_ID:CAMSTD}
+
+# WhatsApp Business API
+whatsapp:
+  api-url: ${WHATSAPP_API_URL:https://graph.facebook.com/v19.0}
+  phone-number-id: ${WHATSAPP_PHONE_NUMBER_ID:}
+  access-token: ${WHATSAPP_ACCESS_TOKEN:}
+  verify-token: ${WHATSAPP_VERIFY_TOKEN:}
+
+# OTP Configuration
+otp:
+  expiry-minutes: 10
+  max-attempts: 3
+  length: 6
+
+# Account Security
+security:
+  max-login-attempts: 5
+  lockout-duration-minutes: 30
+  password:
+    min-length: 8
+    require-uppercase: true
+    require-digit: true
+    require-special: true
+
+# Rate Limiting
+rate-limit:
+  login:
+    capacity: 10
+    refill-per-minute: 5
+  otp:
+    capacity: 3
+    refill-per-hour: 3
+  api:
+    capacity: 100
+    refill-per-minute: 60
+
+# Image Processing
+image:
+  thumbnail:
+    width: 300
+    height: 300
+  preview:
+    width: 800
+    height: 800
+  watermark:
+    opacity: 0.5
+    position: BOTTOM_RIGHT
+
+# Springdoc OpenAPI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+  info:
+    title: Cameraman Photo Studio API
+    version: 1.0.0
+    description: Enterprise Photo Studio Management Platform API
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,flyway,caches,scheduledtasks
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+logging:
+  level:
+    com.cameraman: DEBUG
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/cameraman.log
+    max-size: 100MB
+    max-history: 30

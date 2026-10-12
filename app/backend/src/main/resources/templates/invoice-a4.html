@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="'Invoice ' + ${invoice.invoiceNumber}">Invoice</title>
+    <style>
+  @page { size: A4; margin: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; color: #333; background: #fff; }
+        .page { width: 794px; min-height: 1123px; margin: 0 auto; padding: 40px; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 3px solid #1a73e8; padding-bottom: 20px; }
+        .studio-name { font-size: 22px; font-weight: 700; color: #1a73e8; }
+        .studio-info { color: #666; font-size: 11px; line-height: 1.8; margin-top: 6px; }
+        .invoice-title { text-align: right; }
+        .invoice-title h1 { font-size: 28px; font-weight: 700; color: #1a73e8; text-transform: uppercase; }
+        .invoice-title .inv-number { font-size: 14px; color: #666; margin-top: 4px; }
+        .invoice-meta { display: flex; justify-content: space-between; margin: 24px 0; }
+        .bill-to { flex: 1; }
+        .bill-to h3, .inv-details h3 { font-size: 11px; text-transform: uppercase; color: #888; letter-spacing: 1px; margin-bottom: 8px; }
+        .bill-to p, .inv-details p { font-size: 13px; line-height: 1.7; }
+        .inv-details { text-align: right; }
+        table.items { width: 100%; border-collapse: collapse; margin: 24px 0; }
+        table.items thead tr { background: #1a73e8; color: #fff; }
+        table.items thead th { padding: 10px 12px; text-align: left; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+        table.items tbody tr:nth-child(even) { background: #f8f9fa; }
+        table.items tbody td { padding: 10px 12px; border-bottom: 1px solid #e8eaed; }
+        .totals { float: right; width: 300px; margin-top: 16px; }
+        .totals table { width: 100%; }
+        .totals td { padding: 6px 8px; font-size: 13px; }
+        .totals td:last-child { text-align: right; font-weight: 600; }
+        .totals tr.total-row td { background: #1a73e8; color: #fff; font-size: 15px; border-radius: 4px; padding: 10px 8px; }
+        .clearfix::after { content: ""; display: table; clear: both; }
+        .footer-section { margin-top: 60px; border-top: 1px solid #e8eaed; padding-top: 20px; }
+        .bank-details, .terms { font-size: 11px; color: #666; line-height: 1.8; }
+        .signature-box { float: right; text-align: center; margin-top: 20px; }
+        .signature-line { border-top: 1px solid #333; width: 160px; margin-bottom: 4px; }
+        .gst-badge { display: inline-block; background: #e8f5e9; color: #2e7d32; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-top: 4px; }
+        .paid-stamp { position: absolute; top: 180px; right: 60px; transform: rotate(-20deg); border: 4px solid #4caf50; color: #4caf50; font-size: 32px; font-weight: 900; padding: 6px 16px; opacity: 0.4; border-radius: 6px; }
+    </style>
+</head>
+<body>
+<div class="page">
+    <!-- PAID STAMP -->
+    <div th:if="${invoice.status == 'PAID'}" class="paid-stamp">PAID</div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div>
+            <div class="studio-name" th:text="${studio.studioName}">Cameraman Photo Studio</div>
+            <div class="studio-info">
+                <span th:text="${studio.address}"></span><br>
+                <span th:text="'📞 ' + ${studio.phone}"></span> &nbsp;
+                <span th:text="'✉ ' + ${studio.email}"></span><br>
+                <span th:if="${studio.gstNumber}" class="gst-badge" th:text="'GSTIN: ' + ${studio.gstNumber}"></span>
+            </div>
+        </div>
+        <div class="invoice-title">
+            <h1>Tax Invoice</h1>
+            <div class="inv-number" th:text="'# ' + ${invoice.invoiceNumber}"></div>
+        </div>
+    </div>
+
+    <!-- META -->
+    <div class="invoice-meta">
+        <div class="bill-to">
+            <h3>Bill To</h3>
+            <p><strong th:text="${invoice.clientName}"></strong></p>
+            <p th:if="${invoice.clientMobile}" th:text="'📞 ' + ${invoice.clientMobile}"></p>
+            <p th:if="${invoice.clientEmail}" th:text="${invoice.clientEmail}"></p>
+            <p th:if="${invoice.clientAddress}" th:text="${invoice.clientAddress}"></p>
+            <p th:if="${invoice.clientGstin}" th:text="'GSTIN: ' + ${invoice.clientGstin}"></p>
+        </div>
+        <div class="inv-details">
+            <h3>Invoice Details</h3>
+            <p><strong>Invoice Date:</strong> <span th:text="${#temporals.format(invoice.invoiceDate, 'dd MMM yyyy')}"></span></p>
+            <p th:if="${invoice.dueDate}"><strong>Due Date:</strong> <span th:text="${#temporals.format(invoice.dueDate, 'dd MMM yyyy')}"></span></p>
+            <p th:if="${invoice.bookingId}"><strong>Booking Ref:</strong> <span th:text="${invoice.bookingId}"></span></p>
+        </div>
+    </div>
+
+    <!-- ITEMS TABLE -->
+    <table class="items">
+        <thead>
+            <tr>
+                <th style="width:5%">#</th>
+                <th style="width:45%">Description</th>
+                <th style="width:10%;text-align:center">Qty</th>
+                <th style="width:18%;text-align:right">Unit Price (₹)</th>
+                <th style="width:10%;text-align:right">Disc%</th>
+                <th style="width:12%;text-align:right">Amount (₹)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="item, stat : ${items}">
+                <td th:text="${stat.index + 1}"></td>
+                <td>
+                    <span th:text="${item.description}"></span>
+                    <small th:if="${item.hsnCode}" style="color:#888;display:block" th:text="'HSN: ' + ${item.hsnCode}"></small>
+                </td>
+                <td style="text-align:center" th:text="${item.quantity}"></td>
+                <td style="text-align:right" th:text="${#numbers.formatDecimal(item.unitPrice, 1, 2)}"></td>
+                <td style="text-align:right" th:text="${item.discountPercent != null ? item.discountPercent + '%' : '-'}"></td>
+                <td style="text-align:right" th:text="${#numbers.formatDecimal(item.lineTotal, 1, 2)}"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- TOTALS -->
+    <div class="clearfix">
+        <div class="totals">
+            <table>
+                <tr>
+                    <td>Subtotal</td>
+                    <td th:text="'₹ ' + ${#numbers.formatDecimal(invoice.subtotal, 1, 2)}"></td>
+                </tr>
+                <tr th:if="${invoice.discountAmount != null and invoice.discountAmount > 0}">
+                    <td style="color:#e53935">Discount</td>
+                    <td style="color:#e53935" th:text="'- ₹ ' + ${#numbers.formatDecimal(invoice.discountAmount, 1, 2)}"></td>
+                </tr>
+                <tr>
+                    <td>Taxable Amount</td>
+                    <td th:text="'₹ ' + ${#numbers.formatDecimal(invoice.taxableAmount, 1, 2)}"></td>
+                </tr>
+                <tr th:if="${invoice.cgstAmount != null and invoice.cgstAmount > 0}">
+                    <td th:text="'CGST @ ' + ${invoice.cgstRate} + '%'"></td>
+                    <td th:text="'₹ ' + ${#numbers.formatDecimal(invoice.cgstAmount, 1, 2)}"></td>
+                </tr>
+                <tr th:if="${invoice.sgstAmount != null and invoice.sgstAmount > 0}">
+                    <td th:text="'SGST @ ' + ${invoice.sgstRate} + '%'"></td>
+                    <td th:text="'₹ ' + ${#numbers.formatDecimal(invoice.sgstAmount, 1, 2)}"></td>
+                </tr>
+                <tr th:if="${invoice.igstAmount != null and invoice.igstAmount > 0}">
+                    <td th:text="'IGST @ ' + ${invoice.igstRate} + '%'"></td>
+                    <td th:text="'₹ ' + ${#numbers.formatDecimal(invoice.igstAmount, 1, 2)}"></td>
+                </tr>
+                <tr class="total-row">
+                    <td><strong>Total</strong></td>
+                    <td><strong th:text="'₹ ' + ${#numbers.formatDecimal(invoice.totalAmount, 1, 2)}"></strong></td>
+                </tr>
+                <tr th:if="${invoice.amountPaid != null and invoice.amountPaid > 0}">
+                    <td style="color:#2e7d32">Amount Paid</td>
+                    <td style="color:#2e7d32" th:text="'₹ ' + ${#numbers.formatDecimal(invoice.amountPaid, 1, 2)}"></td>
+                </tr>
+                <tr th:if="${invoice.balanceDue != null and invoice.balanceDue > 0}" style="background:#fff3e0">
+                    <td><strong style="color:#e65100">Balance Due</strong></td>
+                    <td><strong style="color:#e65100" th:text="'₹ ' + ${#numbers.formatDecimal(invoice.balanceDue, 1, 2)}"></strong></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer-section clearfix">
+        <div class="bank-details" th:if="${studio.bankName}">
+            <strong>Payment Details:</strong><br>
+            Bank: <span th:text="${studio.bankName}"></span> &nbsp;|&nbsp;
+            A/C: <span th:text="${studio.bankAccount}"></span> &nbsp;|&nbsp;
+            IFSC: <span th:text="${studio.bankIfsc}"></span><br>
+            UPI: <span th:text="${studio.upiId}"></span>
+        </div>
+        <div class="signature-box">
+            <div style="height:50px"></div>
+            <div class="signature-line"></div>
+            <small>Authorized Signature</small><br>
+            <small th:text="${studio.studioName}"></small>
+        </div>
+        <div class="terms" style="margin-top:16px;" th:if="${invoice.termsConditions}">
+            <strong>Terms &amp; Conditions:</strong><br>
+            <span th:text="${invoice.termsConditions}"></span>
+        </div>
+        <p th:if="${invoice.generatedByName}" style="margin-top:16px;font-size:10px;color:#999;">
+            Bill generated by <span th:text="${invoice.generatedByName}"></span> on <span th:text="${#temporals.format(invoice.createdAt,'dd MMM yyyy, hh:mm a')}"></span>
+        </p>
+        <p style="text-align:center;margin-top:20px;font-size:11px;color:#aaa;">Thank you for your business!</p>
+    </div>
+</div>
+</body>
+</html>

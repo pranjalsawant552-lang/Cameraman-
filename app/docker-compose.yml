@@ -1,0 +1,193 @@
+# ============================================================
+# Cameraman Photo Studio — FULL LOCAL STACK (one command)
+#
+#   cp .env.example .env        (optional — defaults work as-is)
+#   docker compose up --build
+#
+# Starts: PostgreSQL, Redis, MinIO (S3-compatible storage),
+#         backend (Spring Boot), frontend (React, served by nginx).
+#
+#   Website / admin   http://localhost:3000
+#   API               http://localhost:8080/api
+#   Swagger UI        http://localhost:8080/api/swagger-ui.html
+#   MinIO console     http://localhost:9001   (minioadmin / minioadmin123)
+#
+# Moving to real storage later (AWS S3 / iDrive e2): edit ONLY the S3_*
+# values in .env (see .env.example), remove the minio services if you
+# like, and rebuild. No code changes.
+#
+# This file is for local/demo use. The production stack (nginx + TLS)
+# is backend/docker-compose.yml.
+# ============================================================
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  app_logs:
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cameraman-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cameraman_db
+      POSTGRES_USER: cameraman
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cameraman@2024}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cameraman -d cameraman_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    container_name: cameraman-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  # ---------- S3-compatible object storage ----------
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: cameraman-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin123}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9000:9000"   # S3 API (browser opens signed photo URLs here)
+      - "9001:9001"   # web console
+
+  # One-shot: create the bucket + allow anonymous READ of objects
+  # (needed only for public assets: inventory QR codes, WhatsApp media).
+  # Gallery photos / invoices stay private and use signed URLs.
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    container_name: cameraman-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 $${S3_ACCESS_KEY} $${S3_SECRET_KEY}; do echo 'waiting for MinIO...'; sleep 2; done &&
+      mc mb --ignore-existing local/$${S3_BUCKET} &&
+      mc anonymous set download local/$${S3_BUCKET} &&
+      echo 'MinIO bucket ready.'
+      "
+    environment:
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin123}
+      S3_BUCKET: ${S3_BUCKET:-cameraman-photos}
+    restart: "no"
+
+  # ---------- Spring Boot API ----------
+  backend:
+    build:
+      context: ./backend
+    container_name: cameraman-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      SPRING_PROFILE: dev            # dev = OTP codes printed in logs, Swagger on
+      DB_URL: jdbc:postgresql://postgres:5432/cameraman_db
+      DB_USERNAME: cameraman
+      DB_PASSWORD: ${DB_PASSWORD:-cameraman@2024}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: ${JWT_SECRET:-c2VjdXJlLWp3dC1zZWNyZXQta2V5LWZvci1jYW1lcmFtYW4tcGhvdG8tc3R1ZGlvLTIwMjQ=}
+
+      # ---- Storage (all S3-compatible; swap these for AWS S3 / iDrive e2) ----
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}                 # how the BACKEND reaches storage
+      S3_PRESIGN_ENDPOINT: ${S3_PRESIGN_ENDPOINT-http://localhost:9000} # how the BROWSER reaches it (blank for real S3/e2)
+      S3_PUBLIC_BASE_URL: ${S3_PUBLIC_BASE_URL-http://localhost:9000/cameraman-photos}
+      S3_BUCKET: ${S3_BUCKET:-cameraman-photos}
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-minioadmin}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-minioadmin123}
+      S3_PATH_STYLE: ${S3_PATH_STYLE:-true}
+
+      # ---- URLs / CORS ----
+      ATTENDANCE_ALLOWED_SERIALS: ${ATTENDANCE_ALLOWED_SERIALS:-}   # e.g. SN123,SN456 or * for any (LAN only)
+      CORS_ALLOWED_ORIGINS: http://localhost:3000,http://localhost:5173,http://localhost:5174
+      APP_BASE_URL: http://localhost:3000
+      API_BASE_URL: http://localhost:8080/api
+
+      # ---- Optional integrations (leave blank; features show "not configured") ----
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      GOOGLE_DRIVE_API_KEY: ${GOOGLE_DRIVE_API_KEY:-}
+      # Google Drive as private storage for originals (see STORAGE.md). Blank = originals stay on S3.
+      GDRIVE_ROOT_FOLDER_ID: ${GDRIVE_ROOT_FOLDER_ID:-}
+      GDRIVE_OAUTH_CLIENT_ID: ${GDRIVE_OAUTH_CLIENT_ID:-}
+      GDRIVE_OAUTH_CLIENT_SECRET: ${GDRIVE_OAUTH_CLIENT_SECRET:-}
+      GDRIVE_OAUTH_REFRESH_TOKEN: ${GDRIVE_OAUTH_REFRESH_TOKEN:-}
+      GDRIVE_SERVICE_ACCOUNT_JSON: ${GDRIVE_SERVICE_ACCOUNT_JSON:-}
+      STORAGE_ORIGINALS: ${STORAGE_ORIGINALS:-auto}
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"   # no SMTP configured -> don't report DOWN
+    volumes:
+      - app_logs:/app/logs
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      start_period: 90s
+      retries: 10
+
+  # One-shot DEV helper: the migration that seeds admin@cameraman.com ships a password
+  # hash that does not match its documented password, so nobody could log in. This sets a
+  # valid hash for "Admin@2024" once the backend has run its migrations.
+  # DEV ONLY — remove this service (and change the password) for anything real.
+  admin-seed:
+    image: postgres:16-alpine
+    container_name: cameraman-admin-seed
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: ${DB_PASSWORD:-cameraman@2024}
+    volumes:
+      - ./dev/seed-admin.sql:/seed-admin.sql:ro
+    entrypoint: ["sh", "-c", "psql -h postgres -U cameraman -d cameraman_db -f /seed-admin.sql && echo 'Admin login ready: admin@cameraman.com / Admin@2024'"]
+    restart: "no"
+
+  # ---------- React frontend ----------
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:8080/api
+        VITE_STUDIO_NAME: ${VITE_STUDIO_NAME:-}
+    container_name: cameraman-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"

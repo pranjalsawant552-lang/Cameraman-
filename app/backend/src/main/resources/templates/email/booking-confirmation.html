@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Booking Confirmed</title>
+<style>
+body{font-family:'Segoe UI',Arial,sans-serif;background:#f4f6f9;margin:0;padding:0}
+.container{max-width:550px;margin:40px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.1)}
+.header{background:linear-gradient(135deg,#34a853 0%,#1e7e34 100%);padding:30px;text-align:center}
+.header h1{color:#fff;margin:0;font-size:22px}
+.body{padding:30px}
+.detail-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #eee;font-size:14px}
+.detail-row strong{color:#333}
+.footer{background:#f8f9fa;padding:18px;text-align:center;color:#9aa0a6;font-size:12px}
+</style></head>
+<body>
+<div class="container">
+  <div class="header"><h1>✅ Booking Confirmed!</h1></div>
+  <div class="body">
+    <p>Hi <strong th:text="${booking.clientName}"></strong>, your booking has been confirmed.</p>
+    <div class="detail-row"><span>Booking Number</span><strong th:text="${booking.bookingNumber}"></strong></div>
+    <div class="detail-row"><span>Date</span><strong th:text="${#temporals.format(booking.bookingDate,'dd MMM yyyy')}"></strong></div>
+    <div class="detail-row"><span>Time</span><strong th:text="${booking.startTime}"></strong></div>
+    <div class="detail-row" th:if="${booking.packageName}"><span>Package</span><strong th:text="${booking.packageName}"></strong></div>
+    <div class="detail-row" th:if="${booking.venue}"><span>Venue</span><strong th:text="${booking.venue}"></strong></div>
+    <p style="margin-top:20px;color:#5f6368;font-size:13px">We look forward to capturing your special moments!</p>
+  </div>
+  <div class="footer" th:text="${appName}">Cameraman Photo Studio</div>
+</div>
+</body></html>
